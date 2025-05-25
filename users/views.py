@@ -16,7 +16,8 @@ class CreateUpdateUserView(APIView):
     def post(self, request):
         data = request.data
         print("data: ", data)
-
+        print("check")
+        
         user_id = get_random_string(12)
         
         height = data.get("height", 175)
