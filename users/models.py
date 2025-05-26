@@ -118,8 +118,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False, verbose_name="Администратор")
     user_id = models.CharField(max_length=255, unique=True)
     full_name = models.CharField(max_length=255, null=True)
+    birth_date = models.CharField(max_length=255, null=True)
     age = models.IntegerField(verbose_name="Возраст")
     gender = models.IntegerField(choices=GENDERS, verbose_name="Пол")
+    mail = models.CharField(max_length=255, null=True)
     height = models.OneToOneField(
         HeightModel, on_delete=models.CASCADE, related_name="Рост", verbose_name="Рост", null=True, blank=True,
     )

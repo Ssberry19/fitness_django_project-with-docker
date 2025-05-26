@@ -5,7 +5,7 @@ from recommendation.views import RecommendationAPIView
 from nutrition.views import NutritionAPIView
 from tracking.views import WeightEntryViewSet, WeightHistoryAPIView
 from modelinfo.views import ModelFeaturesAPIView
-from users.views import CreateUpdateUserView, LoginUserView
+from users.views import CreateUpdateUserView, LoginUserView, ProfileInfoView
 
 # Create a router for ViewSets
 router = DefaultRouter()
@@ -29,5 +29,6 @@ urlpatterns = [
     
     # User create API endpoint
     path('api/users/create/',  CreateUpdateUserView.as_view(), name="users-create"),
-    path('api/users/login/', LoginUserView.as_view(), name="users-login")
+    path('api/users/login/', LoginUserView.as_view(), name="users-login"),
+    path('api/users/profile/', ProfileInfoView.as_view(), name="profile_info_view")
 ]
