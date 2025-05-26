@@ -117,6 +117,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True, verbose_name="Активен")
     is_staff = models.BooleanField(default=False, verbose_name="Администратор")
     user_id = models.CharField(max_length=255, unique=True)
+    full_name = models.CharField(max_length=255, null=True)
     age = models.IntegerField(verbose_name="Возраст")
     gender = models.IntegerField(choices=GENDERS, verbose_name="Пол")
     height = models.OneToOneField(

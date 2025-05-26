@@ -37,7 +37,8 @@ services:
       - DB_PORT=5432
       - DEBUG=0
     ports:
-      - "8000:8000"
+      - "8003:8003"
+      - "8004:8004"
     restart: always
     networks:
       - fitness_network

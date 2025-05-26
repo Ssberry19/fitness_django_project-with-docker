@@ -48,4 +48,4 @@ fi
 # Start server
 echo "Starting server..."
 # exec gunicorn fitness_django.wsgi:application --bind 0.0.0.0:8000
-exec python manage.py runserver 0.0.0.0:8000
+exec python manage.py runserver 0.0.0.0:8004

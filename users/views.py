@@ -34,7 +34,18 @@ class CreateUpdateUserView(APIView):
         print("data: ", data)
 
         user_id = get_random_string(12)
+        full_name = data.get("fullName")
 
+        if data.get("gender") == "male":
+            gender = User.MAN
+        else:
+            gender = User.WOMAN
+
+        if data.get("goal") == "loseWeight":
+            goal = User.WEIGHT_LOSS
+        else:
+            goal = User.WEIGHT_GAIN
+            
         height = data.get("height", 175)
         height = HeightModel(height=height)
         height.save()
@@ -47,12 +58,13 @@ class CreateUpdateUserView(APIView):
 
         User.objects.create(
             user_id=user_id,
+            full_name=full_name,
             age=28,
-            gender=User.MAN,
+            gender=gender,
             height=height,
             weight=weight,
             target_weight=target_weight,
-            goal=User.WEIGHT_GAIN,
+            goal=goal,
             activity_level=User.MODERATE_ACTIVITY,
             cycle_record=None,
         )
