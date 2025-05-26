@@ -17,7 +17,8 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = int(os.environ.get("DEBUG", "0")) == 1
+#DEBUG = int(os.environ.get("DEBUG", "0")) == 1
+DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 print("allowed hosts: ", ALLOWED_HOSTS)
@@ -25,7 +26,11 @@ print("allowed hosts: ", ALLOWED_HOSTS)
 # Application definition
 
 INSTALLED_APPS = [
-    # "django.contrib.admin",
+    # Apps
+    "users.apps.UsersConfig",
+
+    
+    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -37,7 +42,6 @@ INSTALLED_APPS = [
     "nutrition",
     "tracking",
     "modelinfo",
-    "users",
     "api",
 ]
 
@@ -195,4 +199,7 @@ SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
+SITE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 AUTH_USER_MODEL = "users.User"
+STATIC_ROOT = os.path.join(SITE_ROOT, "static")
+STATIC_ROOT = "static/"

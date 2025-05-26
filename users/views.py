@@ -14,11 +14,27 @@ class CreateUpdateUserView(APIView):
     permission_classes = [AllowAny]  # Allow public access to model information
 
     def post(self, request):
+        """
+        {
+        'fullName': 'ubsa',
+        'gender': 'female',
+        'birthDate': '2025-05-21T00:00:00.000',
+        'height': 170.0,
+        'weight': 85.0,
+        'targetWeight': 65.0,
+        'goal': 'loseWeight',
+        'activityLevel': None,
+        'menstrualCycles': ['2025-05-14T00:00:00.000Z', '2025-04-16T00:00:00.000Z', '2025-03-12T00:00:00.000Z'],
+        'email': 'insaniyatka@gmail.com',
+        'password': 'insA10!'
+        }
+        """
+
         data = request.data
         print("data: ", data)
-        
+
         user_id = get_random_string(12)
-        
+
         height = data.get("height", 175)
         height = HeightModel(height=height)
         height.save()
@@ -42,6 +58,17 @@ class CreateUpdateUserView(APIView):
         )
 
         return Response()
+
+
+class LoginUserView(APIView):
+    """Create user"""
+
+    permission_classes = [AllowAny]  # Allow public access to model information
+
+    def post(self, request):
+        data = request.data
+        print("login user view enter: ", data)
+        return Response(status=200)
 
 
 class CustomAuthToken(ObtainAuthToken):
