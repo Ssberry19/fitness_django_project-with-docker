@@ -1,16 +1,33 @@
 from django.db import models
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin, User
+from django.conf import settings
 
 
 class HeightModel(models.Model):
-    height = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="Рост", null=True, blank=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True
+    )
+    height = models.DecimalField(
+        max_digits=5, decimal_places=2, verbose_name="Рост", null=True, blank=True
+    )
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Изменено")
+
+    def __str__(self):
+        return str(self.height)
 
 
 class WeightModel(models.Model):
-    weight = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="Вес", null=True, blank=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True
+    )
+    weight = models.DecimalField(
+        max_digits=5, decimal_places=2, verbose_name="Вес", null=True, blank=True
+    )
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Изменено")
+
+    def __str__(self):
+        return str(self.weight)
 
 
 class CycleModel(models.Model):
@@ -38,7 +55,7 @@ class UserManager(BaseUserManager):
             target_weight=10,
             goal=1,
             activity_level=1,
-            **extra_fields
+            **extra_fields,
         )
         user.set_password(password)
         user.save(using=self._db)
@@ -113,7 +130,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         (VERY_ACTIVE, "Высокая активность"),
     ]
 
-    
     is_active = models.BooleanField(default=True, verbose_name="Активен")
     is_staff = models.BooleanField(default=False, verbose_name="Администратор")
     user_id = models.CharField(max_length=255, unique=True)
@@ -122,11 +138,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     age = models.IntegerField(verbose_name="Возраст")
     gender = models.IntegerField(choices=GENDERS, verbose_name="Пол")
     mail = models.CharField(max_length=255, null=True)
-    height = models.OneToOneField(
-        HeightModel, on_delete=models.CASCADE, related_name="Рост", verbose_name="Рост", null=True, blank=True,
+    height = models.ForeignKey(
+        HeightModel,
+        on_delete=models.CASCADE,
+        related_name="Рост",
+        verbose_name="Рост",
+        null=True,
+        blank=True,
     )
-    weight = models.OneToOneField(
-        WeightModel, on_delete=models.CASCADE, related_name="Вес", verbose_name="Вес", null=True, blank=True,
+    weight = models.ForeignKey(
+        WeightModel,
+        on_delete=models.CASCADE,
+        related_name="Вес",
+        verbose_name="Вес",
+        null=True,
+        blank=True,
     )
     target_weight = models.DecimalField(
         max_digits=5, decimal_places=2, verbose_name="Целевой вес"
@@ -135,7 +161,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     activity_level = models.IntegerField(
         choices=ACTIVITY_LEVELS, verbose_name="Уровень активности"
     )
-    cycle_record = models.OneToOneField(
+    cycle_record = models.ForeignKey(
         CycleModel,
         blank=True,
         null=True,

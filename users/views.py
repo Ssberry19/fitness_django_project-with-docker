@@ -84,14 +84,6 @@ class CreateUpdateUserView(APIView):
 
         goal = goals_2.get(data.get("goal", ""), 1)
 
-        height = data.get("height", 175)
-        height = HeightModel(height=height)
-        height.save()
-
-        weight = data.get("weight", 80)
-        weight = WeightModel(weight=weight)
-        weight.save()
-
         target_weight = data.get("target_weight", 70)
 
         User.objects.create(
@@ -101,13 +93,32 @@ class CreateUpdateUserView(APIView):
             age=age,
             mail=email,
             gender=gender,
-            height=height,
-            weight=weight,
+            # height=height,
+            # weight=weight,
             target_weight=target_weight,
             goal=goal,
             activity_level=activity_level_2.get(data.get("activityLevel"), 1),
             cycle_record=None,
         )
+
+        user = None
+        for val in get_user_model().objects.all():
+            print(repr(val.user_id))
+            if val.user_id == user_id:
+                user = val
+                break
+
+        height = data.get("height", 175)
+        height = HeightModel(height=height, user=user)
+        height.save()
+
+        weight = data.get("weight", 80)
+        weight = WeightModel(weight=weight, user=user)
+        weight.save()
+
+        user.weight = weight
+        user.height = height
+        user.save()
 
         return Response({"userId": user_id}, status=200)
 
@@ -170,8 +181,8 @@ class ProfileInfoView(APIView):
             "birthDate": user.birth_date,
             "weight": weight.weight,
             "height": height.height,
-            "activity_level": activity_level.get(user.activity_level, "sedentary"),
-            "target_weight": user.target_weight,
+            "activityLevel": activity_level.get(user.activity_level, "sedentary"),
+            "targetWeight": user.target_weight,
             "goal": goals.get(user.goal, "loseWeight"),
         }
 
@@ -187,3 +198,37 @@ class CustomAuthToken(ObtainAuthToken):
         user = serializer.validated_data["user"]
         token, created = Token.objects.get_or_create(user=user)
         return Response({"token": token.key, "user_id": user.pk, "email": user.email})
+
+
+class WeightHistoryView(APIView):
+    permission_classes = [AllowAny]  # Allow public access to model information
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+
+        data = request.data
+        print("data: ", data)
+
+        user_id = data.get("userId")
+        print("repr: ", repr(user_id))
+
+        if user_id:
+            print("iser odL ", user_id)
+            for val in get_user_model().objects.all():
+                print(repr(val.user_id))
+                if val.user_id == user_id:
+                    user = val
+                    break
+            else:
+                return Response(status=404)
+        else:
+            user = get_user_model().objects.last()
+
+        print("user: ", user)
+        weights = WeightModel.objects.filter(user=user)
+
+        print("user weights: ", weights)
+        for weight in weights:
+            print("weight: ", weight)
+        weights_list = [{str(weight.weight): weight.updated_at.strftime('%Y-%m-%d')} for weight in weights]
+        return Response(weights_list)
