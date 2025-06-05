@@ -138,16 +138,15 @@ class ProfileInfoView(APIView):
     permission_classes = [AllowAny]  # Allow public access to model information
 
     def post(self, request):
-        activity_level = {1: "sedentary", 2: "light", 3: "moderate", 4: "active"}
-        goals = {1: "loseWeight", 2: "maintain", 3: "gainWeight", 4: "cuttin"}
-        """
-        ACTIVITY_LEVELS = [
-        (SEDENTARY, "Сидячий"),
-        (LIGHT_ACTIVITY, "Легкая активность"),
-        (MODERATE_ACTIVITY, "Умеренная активность"),
-        (VERY_ACTIVE, "Высокая активность"),
-        ]
-        """
+        activity_level = {
+            1: "sedentary",
+            2: "light",
+            3: "moderate",
+            4: "high",
+            5: "extreme",
+        }
+        goals = {1: "weight_loss", 2: "weight_gain", 3: "maintenance"}
+
         data = request.data
         print("data: ", data)
 
@@ -175,15 +174,19 @@ class ProfileInfoView(APIView):
         height = user.height
 
         result = {
-            "fullName": user.full_name,
-            "gender": "male" if user.gender == 1 else "female",
-            "email": user.mail,
-            "birthDate": user.birth_date,
-            "weight": weight.weight,
-            "height": height.height,
-            "activityLevel": activity_level.get(user.activity_level, "sedentary"),
-            "targetWeight": user.target_weight,
-            "goal": goals.get(user.goal, "loseWeight"),
+            "status": "okay",
+            "message": "zaebis",
+            "data": {
+                "fullName": user.full_name,
+                "gender": "male" if user.gender == 1 else "female",
+                "email": user.mail,
+                "birthDate": user.birth_date,
+                "weight": weight.weight,
+                "height": height.height,
+                "activityLevel": activity_level.get(user.activity_level, "sedentary"),
+                "targetWeight": user.target_weight,
+                "goal": goals.get(user.goal, "loseWeight"),
+            }
         }
 
         return Response(result, status=200)
@@ -230,5 +233,8 @@ class WeightHistoryView(APIView):
         print("user weights: ", weights)
         for weight in weights:
             print("weight: ", weight)
-        weights_list = [{str(weight.weight): weight.updated_at.strftime('%Y-%m-%d')} for weight in weights]
+        weights_list = [
+            {str(weight.weight): weight.updated_at.strftime("%Y-%m-%d")}
+            for weight in weights
+        ]
         return Response(weights_list)

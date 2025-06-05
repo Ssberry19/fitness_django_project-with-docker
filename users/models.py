@@ -114,20 +114,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     CUTTING = 4
     GOALS = [
         (WEIGHT_LOSS, "Похудение"),
-        (MAINTENANCE, "Тонус"),
         (WEIGHT_GAIN, "Набор массы"),
-        (CUTTING, "Сушка"),
+        (MAINTENANCE, "Тонус"),
     ]
 
     SEDENTARY = 1
-    LIGHT_ACTIVITY = 2
-    MODERATE_ACTIVITY = 3
-    VERY_ACTIVE = 4
+    LIGHT = 2
+    MODERATE = 3
+    HIGH = 4
+    EXTREME = 5
     ACTIVITY_LEVELS = [
         (SEDENTARY, "Сидячий"),
-        (LIGHT_ACTIVITY, "Легкая активность"),
-        (MODERATE_ACTIVITY, "Умеренная активность"),
-        (VERY_ACTIVE, "Высокая активность"),
+        (LIGHT, "Легкая активность"),
+        (MODERATE, "Умеренная активность"),
+        (HIGH, "Высокая активность"),
+        (EXTREME, "Очень высокая активность")
     ]
 
     is_active = models.BooleanField(default=True, verbose_name="Активен")
