@@ -50,7 +50,7 @@ class CreateUpdateUserView(APIView):
         }
         """
 
-        activity_level_2 = {"sedentary": 1, "light": 2, "moderate": 3, "active": 4}
+        activity_level_2 = {"sedentary": 1, "light": 2, "moderate": 3, "high": 4, "extreme": 5}
 
         """
             GOALS = [
@@ -60,7 +60,7 @@ class CreateUpdateUserView(APIView):
             (CUTTING, "Сушка"),
             ]
         """
-        goals_2 = {"loseWeight": 1, "maintain": 2, "gainWeight": 3, "cuttin": 4}
+        goals_2 = {"loseWeight": 1, "gainWeight": 2,  "maintain": 3}
 
         data = request.data
         print("data: ", data)
@@ -84,7 +84,7 @@ class CreateUpdateUserView(APIView):
 
         goal = goals_2.get(data.get("goal", ""), 1)
 
-        target_weight = data.get("target_weight", 70)
+        target_weight = data.get("targetWeight", 70)
 
         User.objects.create(
             user_id=user_id,

@@ -31,6 +31,9 @@ class WeightModel(models.Model):
 
 
 class CycleModel(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Добавлено")
 
 
@@ -109,9 +112,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     ]
 
     WEIGHT_LOSS = 1
-    MAINTENANCE = 2
-    WEIGHT_GAIN = 3
-    CUTTING = 4
+    WEIGHT_GAIN = 2
+    MAINTENANCE = 3
     GOALS = [
         (WEIGHT_LOSS, "Похудение"),
         (WEIGHT_GAIN, "Набор массы"),
