@@ -186,6 +186,7 @@ class ProfileInfoView(APIView):
                 "activityLevel": activity_level.get(user.activity_level, "sedentary"),
                 "targetWeight": user.target_weight,
                 "goal": goals.get(user.goal, "loseWeight"),
+                "menstrualCycles": []
             }
         }
 
