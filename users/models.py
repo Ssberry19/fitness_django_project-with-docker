@@ -37,6 +37,13 @@ class CycleModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Добавлено")
 
 
+class Allergen(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -136,7 +143,6 @@ class User(AbstractUser, PermissionsMixin):
 
     is_active = models.BooleanField(default=True, verbose_name="Активен")
     is_staff = models.BooleanField(default=False, verbose_name="Администратор")
-    full_name = models.CharField(max_length=255, null=True)
     birth_date = models.CharField(max_length=255, null=True)
     age = models.IntegerField(verbose_name="Возраст")
     gender = models.IntegerField(choices=GENDERS, verbose_name="Пол")
@@ -186,6 +192,7 @@ class User(AbstractUser, PermissionsMixin):
     cycle_day = models.IntegerField(
         null=True, blank=True, verbose_name="День текущего цикла"
     )
+    allergens = models.ManyToManyField(Allergen, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Добавлено")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Изменено")
 
