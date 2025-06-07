@@ -13,7 +13,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from users.models import User
-from users.models import HeightModel, WeightModel
+from users.models import HeightModel, WeightModel, Allergen
 
 # full_name
 # gender
@@ -151,6 +151,11 @@ class CreateUpdateUserView(APIView):
                 user = val
                 break
 
+        allergens = data.get("allergens")
+        for allergen in allergens:
+            allergen_value = Allergen.objects.get(name=allergen)
+            user.allergens.add(allergen_value)
+
         height = data.get("height", 175)
         height = HeightModel(height=height, user=user)
         height.save()
@@ -163,7 +168,7 @@ class CreateUpdateUserView(APIView):
         user.height = height
         user.set_password(password)
         user.save()
-        
+
         token = Token.objects.create(user=user)
         print(token.key)
 
@@ -196,7 +201,7 @@ class LoginUserView(APIView):
         user = UserModel._default_manager.get_by_natural_key(username)
         print("uuuuser: ", user)
         print("check: ", user.check_password(data.get("password")))
-        
+
         user = authenticate(
             request=request,
             username=email,
