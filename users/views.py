@@ -196,12 +196,6 @@ class LoginUserView(APIView):
         print("username: ", target_user.username)
         print("password: ", data.get("password"))
 
-        UserModel = get_user_model()
-        username = "altem0510@gmail.com"
-        user = UserModel._default_manager.get_by_natural_key(username)
-        print("uuuuser: ", user)
-        print("check: ", user.check_password(data.get("password")))
-
         user = authenticate(
             request=request,
             username=email,
