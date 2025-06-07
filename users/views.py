@@ -111,10 +111,17 @@ class CreateUpdateUserView(APIView):
         target_weight = data.get("targetWeight", 70)
 
         # cycles
-        cycle_day = int(data.get("cycleDay", 0))
-        cycle_length = int(data.get("cycleLength", 0))
-        last_period_date = data.get("lastPeriodDate")
+        if data.get("cycleDay", 0):
+            cycle_day = int(data.get("cycleDay", 0))
+        else:
+            cycle_day = None
 
+        if data.get("cycleLength"):
+            cycle_length = int(data.get("cycleLength", 0))
+        else:
+            cycle_length = None
+
+        last_period_date = data.get("lastPeriodDate")
         if last_period_date:
             last_period_date_dt = datetime.fromisoformat(last_period_date)
         else:
