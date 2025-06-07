@@ -10,6 +10,7 @@ from users.views import (
     LoginUserView,
     ProfileInfoView,
     WeightHistoryView,
+    LogoutUserView
 )
 
 # Create a router for ViewSets
@@ -29,7 +30,8 @@ urlpatterns = [
     path("api/model-features/", ModelFeaturesAPIView.as_view(), name="model-features"),
     # User create API endpoint
     path("api/users/create/", CreateUpdateUserView.as_view(), name="users-create"),
-    path("api/users/login/", LoginUserView.as_view(), name="users-login"),
     path("api/users/profile/", ProfileInfoView.as_view(), name="profile_info_view"),
     path("api/users/weights/", WeightHistoryView.as_view(), name="weight_history_view"),
+    path("api/users/login/", LoginUserView.as_view(), name="users-login"),
+    path("api/users/logout/", LogoutUserView.as_view(), name="users-logout"),
 ]

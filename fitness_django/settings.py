@@ -17,7 +17,7 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = int(os.environ.get("DEBUG", "0")) == 1
+# DEBUG = int(os.environ.get("DEBUG", "0")) == 1
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
@@ -28,8 +28,6 @@ print("allowed hosts: ", ALLOWED_HOSTS)
 INSTALLED_APPS = [
     # Apps
     "users.apps.UsersConfig",
-
-    
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -37,6 +35,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework.authtoken",
     "corsheaders",
     "recommendation",
     "nutrition",
@@ -154,6 +153,8 @@ REST_FRAMEWORK = {
         "user": "100/hour",
     },
 }
+
+AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
 # ML Model settings
 ML_MODEL_DIR = os.path.join(BASE_DIR, "ml_model")

@@ -1,6 +1,6 @@
 from django.db import models
-from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.contrib.auth.models import PermissionsMixin, User
+from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.models import AbstractUser, PermissionsMixin, User
 from django.conf import settings
 
 
@@ -46,11 +46,12 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, user_id, password, **extra_fields: tuple) -> User:
-        if not user_id:
-            raise ValueError("Please provide an user_id")
+    def create_superuser(self, email, password, **extra_fields: tuple) -> User:
+        if not email:
+            raise ValueError("Please provide an email")
         user = self.model(
-            user_id=user_id,
+            email=email,
+            username=email,
             is_staff=True,
             is_superuser=True,
             age=10,
@@ -68,9 +69,9 @@ class UserManager(BaseUserManager):
         return self.get(**{self.model.USERNAME_FIELD + "__iexact": email})
 
     def get(self, **kwargs: dict) -> User:
-        if "user_id" in kwargs:
-            kwargs["user_id__iexact"] = kwargs["user_id"]
-            del kwargs["user_id"]
+        if "email" in kwargs:
+            kwargs["email__iexact"] = kwargs["email"]
+            del kwargs["email"]
         return super().get(**kwargs)
 
     def update_or_create(self, defaults, **kwargs: dict) -> tuple[User, bool]:
@@ -78,7 +79,7 @@ class UserManager(BaseUserManager):
         new_info.update(defaults) if defaults else {}
         created = True
         try:
-            obj = self.get(user_id=kwargs["user_id"])
+            obj = self.get(email=kwargs["email"])
             for key, value in new_info.items():
                 setattr(obj, key, value)
             obj.save()
@@ -89,7 +90,7 @@ class UserManager(BaseUserManager):
         return obj, created
 
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(AbstractUser, PermissionsMixin):
     """
     **Parameters:**
         - `gender`: String, either "M" or "F"
@@ -130,17 +131,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         (LIGHT, "Легкая активность"),
         (MODERATE, "Умеренная активность"),
         (HIGH, "Высокая активность"),
-        (EXTREME, "Очень высокая активность")
+        (EXTREME, "Очень высокая активность"),
     ]
 
     is_active = models.BooleanField(default=True, verbose_name="Активен")
     is_staff = models.BooleanField(default=False, verbose_name="Администратор")
-    user_id = models.CharField(max_length=255, unique=True)
     full_name = models.CharField(max_length=255, null=True)
     birth_date = models.CharField(max_length=255, null=True)
     age = models.IntegerField(verbose_name="Возраст")
     gender = models.IntegerField(choices=GENDERS, verbose_name="Пол")
-    mail = models.CharField(max_length=255, null=True)
+    email = models.CharField(max_length=255, null=True, unique=True)
     height = models.ForeignKey(
         HeightModel,
         on_delete=models.CASCADE,
@@ -172,10 +172,24 @@ class User(AbstractBaseUser, PermissionsMixin):
         related_name="Цикл",
         verbose_name="Цикл",
     )
+    """
+        int? cycleLength; // Длина цикла
+        DateTime? lastPeriodDate; // Дата последней менструации
+        int? cycleDay;
+    """
+    cycle_length = models.IntegerField(
+        null=True, blank=True, verbose_name="Длина цикла в днях"
+    )
+    last_period_date = models.DateTimeField(
+        null=True, blank=True, verbose_name="Дата последней менструации"
+    )
+    cycle_day = models.IntegerField(
+        null=True, blank=True, verbose_name="День текущего цикла"
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Добавлено")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Изменено")
 
-    USERNAME_FIELD = "user_id"
+    USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     objects = UserManager()

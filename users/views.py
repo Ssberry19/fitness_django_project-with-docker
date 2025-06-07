@@ -2,13 +2,16 @@ from datetime import date
 from datetime import datetime
 
 from django.utils.crypto import get_random_string
-from django.contrib.auth import get_user_model
+from django.db.utils import IntegrityError
+from django.contrib.auth import get_user_model, authenticate
 from django.conf import settings
+
 from rest_framework.views import APIView
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from users.models import User
 from users.models import HeightModel, WeightModel
 
@@ -35,6 +38,22 @@ class CreateUpdateUserView(APIView):
 
     def post(self, request):
         """
+              String? fullName;
+        Gender? gender;
+        DateTime? birthDate;
+        double? height;
+        double? weight;
+        double? targetWeight;
+        FitnessGoal? goal;
+        ActivityLevel? activityLevel;
+        int? cycleLength; // Длина цикла
+        DateTime? lastPeriodDate; // Дата последней менструации
+        int? cycleDay;
+        String? email;
+        String? password;
+        """
+
+        """
         {
         'fullName': 'ubsa',
         'gender': 'female',
@@ -50,7 +69,13 @@ class CreateUpdateUserView(APIView):
         }
         """
 
-        activity_level_2 = {"sedentary": 1, "light": 2, "moderate": 3, "high": 4, "extreme": 5}
+        activity_level_2 = {
+            "sedentary": 1,
+            "light": 2,
+            "moderate": 3,
+            "high": 4,
+            "extreme": 5,
+        }
 
         """
             GOALS = [
@@ -60,13 +85,13 @@ class CreateUpdateUserView(APIView):
             (CUTTING, "Сушка"),
             ]
         """
-        goals_2 = {"loseWeight": 1, "gainWeight": 2,  "maintain": 3}
+        goals_2 = {"loseWeight": 1, "gainWeight": 2, "maintain": 3}
 
         data = request.data
         print("data: ", data)
 
-        user_id = get_random_string(12)
-        full_name = data.get("fullName")
+        username = data.get("username")
+        password = data.get("password")
         birth_date = data.get("birthDate")
 
         if birth_date:
@@ -83,28 +108,46 @@ class CreateUpdateUserView(APIView):
             gender = User.WOMAN
 
         goal = goals_2.get(data.get("goal", ""), 1)
-
         target_weight = data.get("targetWeight", 70)
 
-        User.objects.create(
-            user_id=user_id,
-            full_name=full_name,
-            birth_date=birth_date,
-            age=age,
-            mail=email,
-            gender=gender,
-            # height=height,
-            # weight=weight,
-            target_weight=target_weight,
-            goal=goal,
-            activity_level=activity_level_2.get(data.get("activityLevel"), 1),
-            cycle_record=None,
-        )
+        # cycles
+        cycle_day = int(data.get("cycleDay", 0))
+        cycle_length = int(data.get("cycleLength", 0))
+        last_period_date = data.get("lastPeriodDate")
+
+        if last_period_date:
+            last_period_date_dt = datetime.fromisoformat(last_period_date)
+        else:
+            last_period_date_dt = None
+
+        try:
+            User.objects.create(
+                username=username,
+                birth_date=birth_date,
+                age=age,
+                email=email,
+                gender=gender,
+                # height=height,
+                # weight=weight,
+                target_weight=target_weight,
+                goal=goal,
+                activity_level=activity_level_2.get(data.get("activityLevel"), 1),
+                cycle_record=None,
+                cycle_length=cycle_length,
+                cycle_day=cycle_day,
+                last_period_date=last_period_date_dt,
+            )
+        except IntegrityError:
+            import traceback
+
+            print(traceback.print_exc())
+
+            return Response("Integrity error", status=400)
 
         user = None
         for val in get_user_model().objects.all():
-            print(repr(val.user_id))
-            if val.user_id == user_id:
+            print(repr(val.email))
+            if val.email == email:
                 user = val
                 break
 
@@ -118,9 +161,13 @@ class CreateUpdateUserView(APIView):
 
         user.weight = weight
         user.height = height
+        user.set_password(password)
         user.save()
+        
+        token = Token.objects.create(user=user)
+        print(token.key)
 
-        return Response({"userId": user_id}, status=200)
+        return Response({"token": token.key}, status=200)
 
 
 class LoginUserView(APIView):
@@ -131,13 +178,53 @@ class LoginUserView(APIView):
     def post(self, request):
         data = request.data
         print("login user view enter: ", data)
-        return Response(status=200)
+        email = data.get("email")
+
+        users = get_user_model().objects.all()
+        for user in users:
+            if user.email == email:
+                target_user = user
+                break
+        else:
+            return Response("No user", status=404)
+
+        print("username: ", target_user.username)
+        print("password: ", data.get("password"))
+
+        UserModel = get_user_model()
+        username = "altem0510@gmail.com"
+        user = UserModel._default_manager.get_by_natural_key(username)
+        print("uuuuser: ", user)
+        print("check: ", user.check_password(data.get("password")))
+        
+        user = authenticate(
+            request=request,
+            username=email,
+            password=data.get("password"),
+        )
+        print("user: ", user)
+        if user is None:
+            return Response("invalid login", status=200)
+
+        old_token = Token.objects.filter(user=target_user)
+        if old_token:
+            old_token.delete()
+
+        print("target user: ", target_user)
+        token = Token.objects.create(user=target_user)
+        print(token.key)
+
+        return Response({"token": token.key}, status=200)
 
 
 class ProfileInfoView(APIView):
-    permission_classes = [AllowAny]  # Allow public access to model information
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    # permission_classes = [Tpl]  # Allow public access to model information
 
     def post(self, request):
+        print("user: ", request.user)
+        print("auth: ", request.auth)
         activity_level = {
             1: "sedentary",
             2: "light",
@@ -145,19 +232,19 @@ class ProfileInfoView(APIView):
             4: "high",
             5: "extreme",
         }
-        goals = {1: "weight_loss", 2: "weight_gain", 3: "maintenance"}
+        goals = {1: "weightLoss", 2: "weightGain", 3: "maintenance"}
 
         data = request.data
         print("data: ", data)
 
-        user_id = data.get("userId")
-        print("repr: ", repr(user_id))
+        email = data.get("email")
+        print("repr: ", repr(email))
 
-        if user_id:
-            print("iser odL ", user_id)
+        if email:
+            print("email: ", email)
             for val in get_user_model().objects.all():
-                print(repr(val.user_id))
-                if val.user_id == user_id:
+                print(repr(val.email))
+                if val.email == email:
                     user = val
                     break
             else:
@@ -165,47 +252,38 @@ class ProfileInfoView(APIView):
         else:
             user = get_user_model().objects.last()
 
-        # user = auth_user.objects.filter(user_id=user_id)
-        # print("user: ", user)
-        print("user: ", user)
+        print("New user: ", user)
 
         weight = user.weight
-        print("weight: ", weight)
         height = user.height
+        print("weight: ", weight)
 
         result = {
             "status": "okay",
             "message": "zaebis",
             "data": {
-                "fullName": user.full_name,
+                "username": user.username,
                 "gender": "male" if user.gender == 1 else "female",
-                "email": user.mail,
+                "email": user.email,
                 "birthDate": user.birth_date,
                 "weight": weight.weight,
                 "height": height.height,
                 "activityLevel": activity_level.get(user.activity_level, "sedentary"),
                 "targetWeight": user.target_weight,
                 "goal": goals.get(user.goal, "loseWeight"),
-                "menstrualCycles": []
-            }
+                "menstrualCycles": [],
+                "cycleDay": user.cycle_day,
+                "cycleLength": user.cycle_length,
+                "lastPeriodDate": user.last_period_date,
+            },
         }
 
         return Response(result, status=200)
 
 
-class CustomAuthToken(ObtainAuthToken):
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(
-            data=request.data, context={"request": request}
-        )
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data["user"]
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({"token": token.key, "user_id": user.pk, "email": user.email})
-
-
 class WeightHistoryView(APIView):
-    permission_classes = [AllowAny]  # Allow public access to model information
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         user = request.user
@@ -213,14 +291,14 @@ class WeightHistoryView(APIView):
         data = request.data
         print("data: ", data)
 
-        user_id = data.get("userId")
-        print("repr: ", repr(user_id))
+        email = data.get("email")
+        print("repr: ", repr(email))
 
-        if user_id:
-            print("iser odL ", user_id)
+        if email:
+            print("iser odL ", email)
             for val in get_user_model().objects.all():
-                print(repr(val.user_id))
-                if val.user_id == user_id:
+                print(repr(val.email))
+                if val.email == email:
                     user = val
                     break
             else:
@@ -239,3 +317,16 @@ class WeightHistoryView(APIView):
             for weight in weights
         ]
         return Response(weights_list)
+
+
+class LogoutUserView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        print("logout: ", request.user)
+        old_token = Token.objects.filter(user=user)
+        if old_token:
+            old_token.delete()
+        return Response("Successfully logout", status=200)
