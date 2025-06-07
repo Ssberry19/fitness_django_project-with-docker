@@ -222,6 +222,7 @@ class ProfileInfoView(APIView):
     # permission_classes = [Tpl]  # Allow public access to model information
 
     def post(self, request):
+        user = request.user
         print("user: ", request.user)
         print("auth: ", request.auth)
         activity_level = {
@@ -235,23 +236,6 @@ class ProfileInfoView(APIView):
 
         data = request.data
         print("data: ", data)
-
-        email = data.get("email")
-        print("repr: ", repr(email))
-
-        if email:
-            print("email: ", email)
-            for val in get_user_model().objects.all():
-                print(repr(val.email))
-                if val.email == email:
-                    user = val
-                    break
-            else:
-                return Response(status=404)
-        else:
-            user = get_user_model().objects.last()
-
-        print("New user: ", user)
 
         weight = user.weight
         height = user.height
