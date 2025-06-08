@@ -526,4 +526,15 @@ class UpdateUserView(APIView):
         user.set_password(password)
         user.save()
 
-        return Response("success", status=200)
+        return Response({"status": "success"}, status=200)
+
+
+class PredictCyclePhaseView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        user.predict_cycle_phase()
+        result = user.cycle_record_json
+        return Response(result, status=200)
