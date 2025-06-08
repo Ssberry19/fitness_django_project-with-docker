@@ -147,7 +147,6 @@ class User(AbstractUser, PermissionsMixin):
     is_active = models.BooleanField(default=True, verbose_name="Active")
     is_staff = models.BooleanField(default=False, verbose_name="Admin")
     birth_date = models.DateTimeField(null=True, blank=True, verbose_name="Birth Date")
-    # birth_date = models.CharField(max_length=255, null=True)
     age = models.IntegerField(verbose_name="Age")
     gender = models.IntegerField(choices=GENDERS, verbose_name="Gender")
     email = models.CharField(max_length=255, null=True, unique=True)
@@ -174,14 +173,7 @@ class User(AbstractUser, PermissionsMixin):
     activity_level = models.IntegerField(
         choices=ACTIVITY_LEVELS, verbose_name="Activity level"
     )
-    cycle_record = models.ForeignKey(
-        CycleModel,
-        blank=True,
-        null=True,
-        on_delete=models.CASCADE,
-        related_name="Cycle",
-        verbose_name="Cycle",
-    )
+    cycle_record = models.CharField(max_length=255, null=True, unique=True)
 
     cycle_record_json = models.JSONField(default=dict, blank=True, null=True)
 
@@ -264,7 +256,6 @@ class User(AbstractUser, PermissionsMixin):
 
         super().save(*args, **kwargs)
 
-
     def predict_cycle_phase(self):
         """
         Sends a POST request to /phase-predict to get predicted menstrual phase.
@@ -284,14 +275,17 @@ class User(AbstractUser, PermissionsMixin):
             }
 
             # Send POST request
-            url = "http://host.docker.internal:8000/phase-predict"
+            url = "http://host.docker.internal:8000/phase/predict"
             response = requests.post(url, json=payload)
-            print("НАЧИНАЕМ PAYLOAD: " + payload) 
+            print("НАЧИНАЕМ PAYLOAD: " + payload)
 
             # Handle success
             if response.status_code == 200:
                 try:
                     result = response.json()
+                    predicted_phase = result.get("predicted_phase", str())
+                    if predicted_phase:
+                        self.cycle_record = predicted_phase
                     self.cycle_record_json = result
                     self.save(update_fields=["cycle_record_json"])
                     return result

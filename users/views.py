@@ -359,7 +359,7 @@ class UpdateUserView(APIView):
         goals_2 = {"loseWeight": 1, "gainWeight": 2, "maintain": 3}
 
         """
-                    User.objects.create(
+                User.objects.create(
                 username=username,
                 birth_date=birth_date,
                 age=age,
@@ -410,7 +410,9 @@ class UpdateUserView(APIView):
         goal = goals_2.get(data.get("goal", ""), 1)
         if goal:
             user.goal = goal
-
+        
+        # activity_level = 
+        
         # cycles
         if data.get("cycleDay", 0):
             cycle_day = int(data.get("cycleDay", 0))
