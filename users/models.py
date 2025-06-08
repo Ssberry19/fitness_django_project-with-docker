@@ -267,11 +267,14 @@ class User(AbstractUser, PermissionsMixin):
             if response.status_code == 200:
                 try:
                     result = response.json()
+                    print("Response JSON: ", result)
                     predicted_phase = result.get("predicted_phase", str())
+                    print("Predicted phase: ", predicted_phase)
                     if predicted_phase:
                         self.menstrual_phase = predicted_phase
+                        print("Menstrual phase updated: ", self.menstrual_phase)
                     self.cycle_record_json = result
-                    self.save(update_fields=["cycle_record_json"])
+                    self.save(update_fields=["cycle_record_json", "menstrual_phase"])
                     return result
                 except ValueError:
                     # Invalid JSON returned
