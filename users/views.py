@@ -143,6 +143,7 @@ class CreateUpdateUserView(APIView):
                     "age": user.age,
                     "bmi": user.bmi,
                     "bfp": user.bfp,
+                    "allergens": [allergen.name for allergen in user.allergens.all()],
                 },
             },
             status=200,
@@ -211,6 +212,7 @@ class LoginUserView(APIView):
                     "age": target_user.age,
                     "bmi": target_user.bmi,
                     "bfp": target_user.bfp,
+                    "allergens": [allergen.name for allergen in user.allergens.all()],
                 },
             },
             status=200,
@@ -225,11 +227,13 @@ class ProfileInfoView(APIView):
         user = request.user
         print("ProfileInfoView. user: ", request.user)
 
+        user.predict_cycle_phase()
+
         weight = user.weight
         height = user.height
         result = {
-            "status": "okay",
-            "message": "zaebis",
+            "status": "Success",
+            "message": "Success",
             "data": {
                 "username": user.username,
                 "gender": "male" if user.gender == 1 else "female",
@@ -248,9 +252,7 @@ class ProfileInfoView(APIView):
                 "age": user.age,
                 "bmi": user.bmi,
                 "bfp": user.bfp,
-                "allergens": [
-                    allergen.name for allergen in user.allergens.all()
-                ],
+                "allergens": [allergen.name for allergen in user.allergens.all()],
             },
         }
 

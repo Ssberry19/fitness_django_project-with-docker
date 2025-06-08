@@ -238,16 +238,13 @@ class User(AbstractUser, PermissionsMixin):
         super().save(*args, **kwargs)
 
     def predict_cycle_phase(self):
-        print("predict_cycle_phase begins")
         """
         Sends a POST request to /phase-predict to get predicted menstrual phase.
         Saves the result to `cycle_record_json`.
         """
         
-        print("before start")
         # Prepare input data
         try:
-            print("before payload")
             payload = {
                 "age": int(self.age) if self.age else 0,
                 "height_cm": float(self.height.height) if self.height else 0,
@@ -257,8 +254,6 @@ class User(AbstractUser, PermissionsMixin):
                 "cycle_day": int(self.cycle_day) if self.cycle_day else 0,
                 "cycle_length": int(self.cycle_length) if self.cycle_length else 0,
             }
-            print("НАЧИНАЕМ PAYLOAD phase/predict: ", payload)
-
             # Send POST request
             url = "http://host.docker.internal:8000/phase/predict"
             response = requests.post(url, json=payload)
@@ -267,12 +262,9 @@ class User(AbstractUser, PermissionsMixin):
             if response.status_code == 200:
                 try:
                     result = response.json()
-                    print("Response JSON: ", result)
                     predicted_phase = result.get("predicted_phase", str())
-                    print("Predicted phase: ", predicted_phase)
                     if predicted_phase:
                         self.menstrual_phase = predicted_phase
-                        print("Menstrual phase updated: ", self.menstrual_phase)
                     self.cycle_record_json = result
                     self.save(update_fields=["cycle_record_json", "menstrual_phase"])
                     return result

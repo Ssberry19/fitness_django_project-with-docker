@@ -1,7 +1,4 @@
 # Django settings for fitness_django project with Docker support.
-
-print("HEREE: ")
-
 import os
 from pathlib import Path
 
@@ -21,7 +18,6 @@ SECRET_KEY = os.environ.get(
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-print("allowed hosts: ", ALLOWED_HOSTS)
 
 # Application definition
 
@@ -37,10 +33,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
-    "recommendation",
-    "nutrition",
-    "tracking",
-    "modelinfo",
     "api",
 ]
 
@@ -193,8 +185,6 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-print("SECURE_SSL_REDIRECT: ", SECURE_SSL_REDIRECT)
 
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
