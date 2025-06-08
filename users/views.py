@@ -1,3 +1,5 @@
+import math
+
 from datetime import date
 from datetime import datetime
 
@@ -29,6 +31,74 @@ from users.models import HeightModel, WeightModel, Allergen
 def calculate_age(born):
     today = date.today()
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+
+def calculate_bmi(weight_kg, height_m):
+    """
+    Calculate Body Mass Index (BMI).
+
+    Parameters:
+        weight_kg (float): Weight in kilograms
+        height_m (float): Height in meters
+
+    Returns:
+        float: BMI rounded to 2 decimal places
+    """
+    if height_m <= 0:
+        raise ValueError("Height must be greater than zero.")
+
+    bmi = weight_kg / (height_m**2)
+    return round(bmi, 2)
+
+
+def bfp_from_bmi_and_age(bmi, age, gender):
+    gender_factor = 1 if gender.lower() == "male" else 0
+    bfp = (1.51 * bmi) - (0.70 * age) + (3.6 * gender_factor) + 1.4
+    return round(bfp, 1)
+
+
+def calculate_body_fat_percentage(gender, neck_cm, waist_cm, hip_cm=None):
+    """
+    Estimate Body Fat Percentage (BFP) using U.S. Navy method.
+
+    Parameters:
+        gender (str): 'male' or 'female'
+        neck_cm (float): Neck circumference in cm
+        waist_cm (float): Waist circumference in cm
+        hip_cm (float): Hip circumference in cm (required only for females)
+
+    Returns:
+        float: Estimated BFP rounded to 1 decimal place, or None if data is insufficient
+    """
+    gender = gender.lower()
+
+    if gender == "male":
+        if neck_cm is None or waist_cm is None:
+            return None
+        log_waist_neck = math.log10(waist_cm - neck_cm)
+        bfp = (
+            495 / (1.0324 - 0.19077 * log_waist_neck + 0.00056 * (log_waist_neck**2))
+            - 450
+        )
+        return round(bfp, 1)
+
+    elif gender == "female":
+        if neck_cm is None or waist_cm is None or hip_cm is None:
+            return None
+        log_waist_hip_neck = math.log10(waist_cm + hip_cm - neck_cm)
+        bfp = (
+            495
+            / (
+                1.29579
+                - 0.35004 * log_waist_hip_neck
+                + 0.00056 * (log_waist_hip_neck**2)
+            )
+            - 450
+        )
+        return round(bfp, 1)
+
+    else:
+        raise ValueError("Gender must be 'male' or 'female'.")
 
 
 class CreateUpdateUserView(APIView):
@@ -130,7 +200,7 @@ class CreateUpdateUserView(APIView):
         try:
             User.objects.create(
                 username=username,
-                birth_date=birth_date,
+                birth_date=birth_date_dt,
                 age=age,
                 email=email,
                 gender=gender,
@@ -158,10 +228,11 @@ class CreateUpdateUserView(APIView):
                 user = val
                 break
 
-        allergens = data.get("allergens")
-        for allergen in allergens:
-            allergen_value = Allergen.objects.get(name=allergen)
-            user.allergens.add(allergen_value)
+        allergens = data.get("allergens", [])
+        if allergens:
+            for allergen in allergens:
+                allergen_value = Allergen.objects.get(name=allergen)
+                user.allergens.add(allergen_value)
 
         height = data.get("height", 175)
         height = HeightModel(height=height, user=user)
@@ -320,3 +391,139 @@ class LogoutUserView(APIView):
         if old_token:
             old_token.delete()
         return Response("Successfully logout", status=200)
+
+
+class UpdateUserView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        print("user: ", user)
+
+        data = request.data
+        print("data: ", data)
+
+        activity_level = {
+            1: "sedentary",
+            2: "light",
+            3: "moderate",
+            4: "high",
+            5: "extreme",
+        }
+
+        activity_level_2 = {
+            "sedentary": 1,
+            "light": 2,
+            "moderate": 3,
+            "high": 4,
+            "extreme": 5,
+        }
+
+        goals = {1: "weightLoss", 2: "weightGain", 3: "maintenance"}
+
+        goals_2 = {"loseWeight": 1, "gainWeight": 2, "maintain": 3}
+
+        """
+                    User.objects.create(
+                username=username,
+                birth_date=birth_date,
+                age=age,
+                email=email,
+                gender=gender,
+                # height=height,
+                # weight=weight,
+                target_weight=target_weight,
+                goal=goal,
+                activity_level=activity_level_2.get(data.get("activityLevel"), 1),
+                cycle_record=None,
+                cycle_length=cycle_length,
+                cycle_day=cycle_day,
+                last_period_date=last_period_date_dt,
+            )
+        """
+
+        print("here: ")
+
+        if data.get("username"):
+            user.username = data.get("username")
+
+        birth_date = data.get("birthDate")
+        if birth_date:
+            birth_date_dt = datetime.fromisoformat(birth_date)
+            age = calculate_age(birth_date_dt)
+            user.birth_date = birth_date_dt
+            user.age = age
+
+        if data.get("email"):
+            user.email = data.get("email")
+
+        print("target weight: ", data.get("targetWeight"))
+        if data.get("targetWeight"):
+            user.target_weight = data.get("targetWeight")
+
+        print(user.target_weight)
+        user.save()
+
+        if data.get("gender") == "male":
+            gender = User.MAN
+        else:
+            gender = User.WOMAN
+
+        if gender:
+            user.gender = gender
+
+        goal = goals_2.get(data.get("goal", ""), 1)
+        if goal:
+            user.goal = goal
+
+        # cycles
+        if data.get("cycleDay", 0):
+            cycle_day = int(data.get("cycleDay", 0))
+        else:
+            cycle_day = None
+
+        if cycle_day:
+            user.cycle_day = cycle_day
+
+        if data.get("cycleLength"):
+            cycle_length = int(data.get("cycleLength", 0))
+        else:
+            cycle_length = None
+
+        if cycle_length:
+            user.cycle_length = cycle_length
+
+        last_period_date = data.get("lastPeriodDate")
+        if last_period_date:
+            last_period_date_dt = datetime.fromisoformat(last_period_date)
+        else:
+            last_period_date_dt = None
+
+        if last_period_date_dt:
+            user.last_period_date = last_period_date_dt
+
+        allergens = data.get("allergens", [])
+        if allergens:
+            for allergen in allergens:
+                allergen_value = Allergen.objects.get(name=allergen)
+                user.allergens.add(allergen_value)
+
+        height = data.get("height", 175)
+        if height:
+            height = HeightModel(height=height, user=user)
+            height.save()
+
+        weight = data.get("weight", 80)
+        if weight:
+            weight = WeightModel(weight=weight, user=user)
+            weight.save()
+
+        user.weight = weight
+        user.height = height
+
+        password = data.get("password")
+        user.set_password(password)
+        user.save()
+
+        return Response("success", status=200)

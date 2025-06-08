@@ -10,7 +10,8 @@ from users.views import (
     LoginUserView,
     ProfileInfoView,
     WeightHistoryView,
-    LogoutUserView
+    LogoutUserView,
+    UpdateUserView
 )
 
 # Create a router for ViewSets
@@ -34,4 +35,5 @@ urlpatterns = [
     path("api/users/weights/", WeightHistoryView.as_view(), name="weight_history_view"),
     path("api/users/login/", LoginUserView.as_view(), name="users-login"),
     path("api/users/logout/", LogoutUserView.as_view(), name="users-logout"),
+    path("api/users/update/", UpdateUserView.as_view(), name="users-update")
 ]
