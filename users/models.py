@@ -101,9 +101,8 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser, PermissionsMixin):
-    
     # Constants
-    
+
     MAN = 1
     WOMAN = 2
     GENDERS = [
@@ -135,13 +134,13 @@ class User(AbstractUser, PermissionsMixin):
 
     is_active = models.BooleanField(default=True, verbose_name="Active")
     is_staff = models.BooleanField(default=False, verbose_name="Admin")
-    
+
     # Main info
     birth_date = models.DateTimeField(null=True, blank=True, verbose_name="Birth Date")
     age = models.IntegerField(verbose_name="Age", null=True, blank=True)
     gender = models.IntegerField(choices=GENDERS, verbose_name="Gender")
     email = models.CharField(max_length=255, null=True, unique=True)
-    
+
     # Parameters
     height = models.ForeignKey(
         HeightModel,
@@ -162,13 +161,13 @@ class User(AbstractUser, PermissionsMixin):
     target_weight = models.DecimalField(
         max_digits=5, decimal_places=2, verbose_name="Target weight"
     )
-    
+
     # Goal, Activity level
     goal = models.IntegerField(choices=GOALS, verbose_name="Goal")
     activity_level = models.IntegerField(
         choices=ACTIVITY_LEVELS, verbose_name="Activity level"
     )
-    
+
     # Cycles
     menstrual_phase = models.CharField(max_length=255, null=True, unique=True)
     cycle_record_json = models.JSONField(default=dict, blank=True, null=True)
@@ -181,7 +180,7 @@ class User(AbstractUser, PermissionsMixin):
     cycle_day = models.IntegerField(
         null=True, blank=True, verbose_name="Current cycle day"
     )
-    
+
     # Allergens
     allergens = models.ManyToManyField(Allergen, blank=True)
 
@@ -213,6 +212,7 @@ class User(AbstractUser, PermissionsMixin):
             except (ValueError, TypeError):
                 print("TRACEBACK!!!")
                 import traceback
+
                 print(traceback.print_exc)
                 pass  # If weight or height can't be converted to float
 
@@ -255,11 +255,11 @@ class User(AbstractUser, PermissionsMixin):
                 "cycle_day": int(self.cycle_day) if self.cycle_day else 0,
                 "cycle_length": int(self.cycle_length) if self.cycle_length else 0,
             }
+            print("НАЧИНАЕМ PAYLOAD phase/predict: " + payload)
 
             # Send POST request
             url = "http://host.docker.internal:8000/phase/predict"
             response = requests.post(url, json=payload)
-            print("НАЧИНАЕМ PAYLOAD phase/predict: " + payload)
 
             # Handle success
             if response.status_code == 200:

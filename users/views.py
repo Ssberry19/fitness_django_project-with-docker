@@ -119,7 +119,34 @@ class CreateUpdateUserView(APIView):
             user.predict_cycle_phase()
 
         token = Token.objects.create(user=user)
-        return Response({"token": token.key}, status=200)
+
+        return Response(
+            {
+                "token": token.key,
+                "data": {
+                    "username": user.username,
+                    "gender": "male" if user.gender == 1 else "female",
+                    "email": user.email,
+                    "birthDate": user.birth_date,
+                    "weight": weight.weight,
+                    "height": height.height,
+                    "activityLevel": activity_levels.get(
+                        user.activity_level, "sedentary"
+                    ),
+                    "targetWeight": user.target_weight,
+                    "goal": goals.get(user.goal, "loseWeight"),
+                    "menstrualCycles": [],
+                    "menstrualPhase": user.menstrual_phase,
+                    "cycleDay": user.cycle_day,
+                    "cycleLength": user.cycle_length,
+                    "lastPeriodDate": user.last_period_date,
+                    "age": user.age,
+                    "bmi": user.bmi,
+                    "bfp": user.bfp,
+                },
+            },
+            status=200,
+        )
 
 
 class LoginUserView(APIView):
@@ -158,7 +185,36 @@ class LoginUserView(APIView):
         if target_user.gender == User.WOMAN:
             target_user.predict_cycle_phase()
 
-        return Response({"token": token.key}, status=200)
+        weight = target_user.weight
+        height = target_user.height
+
+        return Response(
+            {
+                "token": token.key,
+                "data": {
+                    "username": target_user.username,
+                    "gender": "male" if target_user.gender == 1 else "female",
+                    "email": target_user.email,
+                    "birthDate": target_user.birth_date,
+                    "weight": weight.weight,
+                    "height": height.height,
+                    "activityLevel": activity_levels.get(
+                        target_user.activity_level, "sedentary"
+                    ),
+                    "targetWeight": target_user.target_weight,
+                    "goal": goals.get(target_user.goal, "loseWeight"),
+                    "menstrualCycles": [],
+                    "menstrualPhase": target_user.menstrual_phase,
+                    "cycleDay": target_user.cycle_day,
+                    "cycleLength": target_user.cycle_length,
+                    "lastPeriodDate": target_user.last_period_date,
+                    "age": target_user.age,
+                    "bmi": target_user.bmi,
+                    "bfp": target_user.bfp,
+                },
+            },
+            status=200,
+        )
 
 
 class ProfileInfoView(APIView):
@@ -168,6 +224,7 @@ class ProfileInfoView(APIView):
     def post(self, request):
         user = request.user
         print("ProfileInfoView. user: ", request.user)
+
         weight = user.weight
         height = user.height
         result = {
@@ -190,7 +247,7 @@ class ProfileInfoView(APIView):
                 "lastPeriodDate": user.last_period_date,
                 "age": user.age,
                 "bmi": user.bmi,
-                "bmf": user.bmf,
+                "bfp": user.bfp,
             },
         }
 
