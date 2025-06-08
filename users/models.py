@@ -243,9 +243,11 @@ class User(AbstractUser, PermissionsMixin):
         Sends a POST request to /phase-predict to get predicted menstrual phase.
         Saves the result to `cycle_record_json`.
         """
-
+        
+        print("before start")
         # Prepare input data
         try:
+            print("before payload")
             payload = {
                 "age": int(self.age) if self.age else 0,
                 "height_cm": float(self.height.height) if self.height else 0,
@@ -255,7 +257,7 @@ class User(AbstractUser, PermissionsMixin):
                 "cycle_day": int(self.cycle_day) if self.cycle_day else 0,
                 "cycle_length": int(self.cycle_length) if self.cycle_length else 0,
             }
-            print("НАЧИНАЕМ PAYLOAD phase/predict: " + payload)
+            print("НАЧИНАЕМ PAYLOAD phase/predict: ", payload)
 
             # Send POST request
             url = "http://host.docker.internal:8000/phase/predict"
