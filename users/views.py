@@ -1,37 +1,30 @@
-import math
-
-from datetime import date
 from datetime import datetime
-
-from django.utils.crypto import get_random_string
 from django.db.utils import IntegrityError
 from django.contrib.auth import get_user_model, authenticate
-from django.conf import settings
-
 from rest_framework.views import APIView
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from users.models import User
 from users.models import HeightModel, WeightModel, Allergen
 
-# full_name
-# gender
-# email
-# birthDate
-# weight
-# height
-# activity level
-# target_weight
-# goal
-
-
-def calculate_age(born):
-    today = date.today()
-    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-
+activity_levels = {
+    1: "sedentary",
+    2: "light",
+    3: "moderate",
+    4: "high",
+    5: "extreme",
+}
+activity_levels_2 = {
+    "sedentary": 1,
+    "light": 2,
+    "moderate": 3,
+    "high": 4,
+    "extreme": 5,
+}
+goals = {1: "weightLoss", 2: "weightGain", 3: "maintenance"}
+goals_2 = {"loseWeight": 1, "gainWeight": 2, "maintain": 3}
 
 
 class CreateUpdateUserView(APIView):
@@ -40,58 +33,8 @@ class CreateUpdateUserView(APIView):
     permission_classes = [AllowAny]  # Allow public access to model information
 
     def post(self, request):
-        """
-              String? fullName;
-        Gender? gender;
-        DateTime? birthDate;
-        double? height;
-        double? weight;
-        double? targetWeight;
-        FitnessGoal? goal;
-        ActivityLevel? activityLevel;
-        int? cycleLength; // Длина цикла
-        DateTime? lastPeriodDate; // Дата последней менструации
-        int? cycleDay;
-        String? email;
-        String? password;
-        """
-
-        """
-        {
-        'fullName': 'ubsa',
-        'gender': 'female',
-        'birthDate': '2025-05-21T00:00:00.000',
-        'height': 170.0,
-        'weight': 85.0,
-        'targetWeight': 65.0,
-        'goal': 'loseWeight',
-        'activityLevel': None,
-        'menstrualCycles': ['2025-05-14T00:00:00.000Z', '2025-04-16T00:00:00.000Z', '2025-03-12T00:00:00.000Z'],
-        'email': 'insaniyatka@gmail.com',
-        'password': 'insA10!'
-        }
-        """
-
-        activity_level_2 = {
-            "sedentary": 1,
-            "light": 2,
-            "moderate": 3,
-            "high": 4,
-            "extreme": 5,
-        }
-
-        """
-            GOALS = [
-            (WEIGHT_LOSS, "Похудение"),
-            (MAINTENANCE, "Тонус"),
-            (WEIGHT_GAIN, "Набор массы"),
-            (CUTTING, "Сушка"),
-            ]
-        """
-        goals_2 = {"loseWeight": 1, "gainWeight": 2, "maintain": 3}
-
         data = request.data
-        print("data: ", data)
+        print("CreateUpdateUserView. data: ", data)
 
         username = data.get("username")
         password = data.get("password")
@@ -99,9 +42,6 @@ class CreateUpdateUserView(APIView):
 
         if birth_date:
             birth_date_dt = datetime.fromisoformat(birth_date)
-            age = calculate_age(birth_date_dt)
-        else:
-            age = 1
 
         email = data.get("email")
 
@@ -134,29 +74,24 @@ class CreateUpdateUserView(APIView):
             User.objects.create(
                 username=username,
                 birth_date=birth_date_dt,
-                age=age,
                 email=email,
                 gender=gender,
-                # height=height,
-                # weight=weight,
                 target_weight=target_weight,
                 goal=goal,
-                activity_level=activity_level_2.get(data.get("activityLevel"), 1),
-                cycle_record=None,
+                activity_level=activity_levels_2.get(data.get("activityLevel"), 1),
                 cycle_length=cycle_length,
                 cycle_day=cycle_day,
                 last_period_date=last_period_date_dt,
             )
         except IntegrityError:
+            print("users create error exception traceback")
             import traceback
 
             print(traceback.print_exc())
-
             return Response("Integrity error", status=400)
 
         user = None
         for val in get_user_model().objects.all():
-            print(repr(val.email))
             if val.email == email:
                 user = val
                 break
@@ -179,11 +114,11 @@ class CreateUpdateUserView(APIView):
         user.height = height
         user.set_password(password)
         user.save()
-        user.predict_cycle_phase()
-        
-        token = Token.objects.create(user=user)
-        print(token.key)
 
+        if user.gender == User.WOMAN:
+            user.predict_cycle_phase()
+
+        token = Token.objects.create(user=user)
         return Response({"token": token.key}, status=200)
 
 
@@ -194,9 +129,9 @@ class LoginUserView(APIView):
 
     def post(self, request):
         data = request.data
-        print("login user view enter: ", data)
-        email = data.get("email")
+        print("LoginUserView. data: ", data)
 
+        email = data.get("email")
         users = get_user_model().objects.all()
         for user in users:
             if user.email == email:
@@ -205,15 +140,11 @@ class LoginUserView(APIView):
         else:
             return Response("No user", status=404)
 
-        print("username: ", target_user.username)
-        print("password: ", data.get("password"))
-
         user = authenticate(
             request=request,
             username=email,
             password=data.get("password"),
         )
-        print("user: ", user)
         if user is None:
             return Response("invalid login", status=200)
 
@@ -221,9 +152,11 @@ class LoginUserView(APIView):
         if old_token:
             old_token.delete()
 
-        print("target user: ", target_user)
         token = Token.objects.create(user=target_user)
-        print(token.key)
+        target_user.save()
+
+        if target_user.gender == User.WOMAN:
+            target_user.predict_cycle_phase()
 
         return Response({"token": token.key}, status=200)
 
@@ -231,28 +164,12 @@ class LoginUserView(APIView):
 class ProfileInfoView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    # permission_classes = [Tpl]  # Allow public access to model information
 
     def post(self, request):
         user = request.user
-        print("user: ", request.user)
-        print("auth: ", request.auth)
-        activity_level = {
-            1: "sedentary",
-            2: "light",
-            3: "moderate",
-            4: "high",
-            5: "extreme",
-        }
-        goals = {1: "weightLoss", 2: "weightGain", 3: "maintenance"}
-
-        data = request.data
-        print("data: ", data)
-
+        print("ProfileInfoView. user: ", request.user)
         weight = user.weight
         height = user.height
-        print("weight: ", weight)
-
         result = {
             "status": "okay",
             "message": "zaebis",
@@ -263,13 +180,17 @@ class ProfileInfoView(APIView):
                 "birthDate": user.birth_date,
                 "weight": weight.weight,
                 "height": height.height,
-                "activityLevel": activity_level.get(user.activity_level, "sedentary"),
+                "activityLevel": activity_levels.get(user.activity_level, "sedentary"),
                 "targetWeight": user.target_weight,
                 "goal": goals.get(user.goal, "loseWeight"),
                 "menstrualCycles": [],
+                "menstrualPhase": user.menstrual_phase,
                 "cycleDay": user.cycle_day,
                 "cycleLength": user.cycle_length,
                 "lastPeriodDate": user.last_period_date,
+                "age": user.age,
+                "bmi": user.bmi,
+                "bmf": user.bmf,
             },
         }
 
@@ -282,36 +203,13 @@ class WeightHistoryView(APIView):
 
     def post(self, request, *args, **kwargs):
         user = request.user
-
-        data = request.data
-        print("data: ", data)
-
-        email = data.get("email")
-        # print("repr: ", repr(email))
-
-        if email:
-            print("iser odL ", email)
-            for val in get_user_model().objects.all():
-                print(repr(val.email))
-                if val.email == email:
-                    user = val
-                    break
-            else:
-                return Response(status=404)
-        else:
-            user = get_user_model().objects.last()
-
-        print("user: ", user)
+        print("WeightHistoryView. user: ", user)
         weights = WeightModel.objects.filter(user=user)
-
-        print("user weights: ", weights)
-        for weight in weights:
-            print("weight: ", weight)
         weights_list = [
             {str(weight.weight): weight.updated_at.strftime("%Y-%m-%d")}
             for weight in weights
         ]
-        return Response(weights_list)
+        return Response(weights_list, status=200)
 
 
 class LogoutUserView(APIView):
@@ -320,7 +218,7 @@ class LogoutUserView(APIView):
 
     def post(self, request):
         user = request.user
-        print("logout: ", request.user)
+        print("LogoutUserView: ", request.user)
         old_token = Token.objects.filter(user=user)
         if old_token:
             old_token.delete()
@@ -333,51 +231,10 @@ class UpdateUserView(APIView):
 
     def post(self, request):
         user = request.user
-        print("user: ", user)
-
         data = request.data
-        print("data: ", data)
 
-        activity_level = {
-            1: "sedentary",
-            2: "light",
-            3: "moderate",
-            4: "high",
-            5: "extreme",
-        }
-
-        activity_level_2 = {
-            "sedentary": 1,
-            "light": 2,
-            "moderate": 3,
-            "high": 4,
-            "extreme": 5,
-        }
-
-        goals = {1: "weightLoss", 2: "weightGain", 3: "maintenance"}
-
-        goals_2 = {"loseWeight": 1, "gainWeight": 2, "maintain": 3}
-
-        """
-                User.objects.create(
-                username=username,
-                birth_date=birth_date,
-                age=age,
-                email=email,
-                gender=gender,
-                # height=height,
-                # weight=weight,
-                target_weight=target_weight,
-                goal=goal,
-                activity_level=activity_level_2.get(data.get("activityLevel"), 1),
-                cycle_record=None,
-                cycle_length=cycle_length,
-                cycle_day=cycle_day,
-                last_period_date=last_period_date_dt,
-            )
-        """
-
-        print("here: ")
+        print("UpdateUserView. user: ", user)
+        print("UpdateUserView. data: ", data)
 
         if data.get("username"):
             user.username = data.get("username")
@@ -385,19 +242,13 @@ class UpdateUserView(APIView):
         birth_date = data.get("birthDate")
         if birth_date:
             birth_date_dt = datetime.fromisoformat(birth_date)
-            age = calculate_age(birth_date_dt)
             user.birth_date = birth_date_dt
-            user.age = age
 
         if data.get("email"):
             user.email = data.get("email")
 
-        print("target weight: ", data.get("targetWeight"))
         if data.get("targetWeight"):
             user.target_weight = data.get("targetWeight")
-
-        print(user.target_weight)
-        user.save()
 
         if data.get("gender") == "male":
             gender = User.MAN
@@ -410,10 +261,11 @@ class UpdateUserView(APIView):
         goal = goals_2.get(data.get("goal", ""), 1)
         if goal:
             user.goal = goal
-        
-        # activity_level = 
-        
-        # cycles
+
+        activity_level = activity_levels_2(data.get("activityLevel", ""), 1)
+        if activity_level:
+            user.activity_level = activity_level
+
         if data.get("cycleDay", 0):
             cycle_day = int(data.get("cycleDay", 0))
         else:
@@ -471,6 +323,7 @@ class PredictCyclePhaseView(APIView):
 
     def post(self, request):
         user = request.user
+        print("PredictCyclePhaseView. user: ", user)
         user.predict_cycle_phase()
         result = user.cycle_record_json
         return Response(result, status=200)

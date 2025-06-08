@@ -101,20 +101,9 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser, PermissionsMixin):
-    """
-    **Parameters:**
-        - `gender`: String, either "M" or "F"
-        - `age`: Integer, age in years
-        - `height`: Float, height in cm
-        - `weight`: Float, weight in kg
-        - `goal`: String, one of "weight_loss", "maintenance", "weight_gain", "cutting"
-        - `activity_level`: String, one of "sedentary", "light_activity", "moderate_activity", "very_active"
-        - `target_weight`: Float, target weight in kg (optional)
-        - `cycle_start_date`: String, date of last menstrual cycle start in YYYY-MM-DD format (optional, for women only)
-
-        пол, рост, возраст, вес (соотвественно сразу формула ИМТ), цель (похудение, поддержание тонуса, набор веса, сушка), целевой вес (прогнозируемое ИМТ), уровень активности (сидячий, легкая активность, умеренная активность, очень активный), даты начала последних трех циклов (для женщин) для определения фаз (менструальной, фолликулярной, овуляторной и лютеиновой фазы)
-    """
-
+    
+    # Constants
+    
     MAN = 1
     WOMAN = 2
     GENDERS = [
@@ -146,10 +135,14 @@ class User(AbstractUser, PermissionsMixin):
 
     is_active = models.BooleanField(default=True, verbose_name="Active")
     is_staff = models.BooleanField(default=False, verbose_name="Admin")
+    
+    # Main info
     birth_date = models.DateTimeField(null=True, blank=True, verbose_name="Birth Date")
-    age = models.IntegerField(verbose_name="Age")
+    age = models.IntegerField(verbose_name="Age", null=True, blank=True)
     gender = models.IntegerField(choices=GENDERS, verbose_name="Gender")
     email = models.CharField(max_length=255, null=True, unique=True)
+    
+    # Parameters
     height = models.ForeignKey(
         HeightModel,
         on_delete=models.CASCADE,
@@ -169,19 +162,16 @@ class User(AbstractUser, PermissionsMixin):
     target_weight = models.DecimalField(
         max_digits=5, decimal_places=2, verbose_name="Target weight"
     )
+    
+    # Goal, Activity level
     goal = models.IntegerField(choices=GOALS, verbose_name="Goal")
     activity_level = models.IntegerField(
         choices=ACTIVITY_LEVELS, verbose_name="Activity level"
     )
-    cycle_record = models.CharField(max_length=255, null=True, unique=True)
-
+    
+    # Cycles
+    menstrual_phase = models.CharField(max_length=255, null=True, unique=True)
     cycle_record_json = models.JSONField(default=dict, blank=True, null=True)
-
-    """
-        int? cycleLength; // Длина цикла
-        DateTime? lastPeriodDate; // Дата последней менструации
-        int? cycleDay;
-    """
     cycle_length = models.IntegerField(
         null=True, blank=True, verbose_name="Cycle length in days"
     )
@@ -191,6 +181,8 @@ class User(AbstractUser, PermissionsMixin):
     cycle_day = models.IntegerField(
         null=True, blank=True, verbose_name="Current cycle day"
     )
+    
+    # Allergens
     allergens = models.ManyToManyField(Allergen, blank=True)
 
     # Stored metrics
@@ -210,9 +202,6 @@ class User(AbstractUser, PermissionsMixin):
         self.bmi = None
         self.bfp = None
 
-        if self.weight and self.height:
-            print("HEIGHT: ", self.height.height, repr(self.height.height))
-
         # Ensure weight and height exist before calculating BMI
         if self.weight and self.height and float(self.height.height) > 0:
             try:
@@ -220,15 +209,10 @@ class User(AbstractUser, PermissionsMixin):
                 height_value = float(self.height.height)
                 # Convert height to meters by dividing by 100
                 height_m = float(height_value) / 100
-
-                print("weight value: ", weight_value)
-                print("height value: ", height_value)
-
                 self.bmi = round(weight_value / (height_m**2), 2)
             except (ValueError, TypeError):
                 print("TRACEBACK!!!")
                 import traceback
-
                 print(traceback.print_exc)
                 pass  # If weight or height can't be converted to float
 
@@ -251,12 +235,10 @@ class User(AbstractUser, PermissionsMixin):
             elif self.gender == self.WOMAN:
                 self.bfp = round((1.20 * self.bmi) + (0.23 * self.age) - 5.4, 1)
 
-        print("SELF BMI: ", self.bmi)
-        print("SELF BFP: ", self.bfp)
-
         super().save(*args, **kwargs)
 
     def predict_cycle_phase(self):
+        print("predict_cycle_phase begins")
         """
         Sends a POST request to /phase-predict to get predicted menstrual phase.
         Saves the result to `cycle_record_json`.
@@ -277,7 +259,7 @@ class User(AbstractUser, PermissionsMixin):
             # Send POST request
             url = "http://host.docker.internal:8000/phase/predict"
             response = requests.post(url, json=payload)
-            print("НАЧИНАЕМ PAYLOAD: " + payload)
+            print("НАЧИНАЕМ PAYLOAD phase/predict: " + payload)
 
             # Handle success
             if response.status_code == 200:
@@ -285,7 +267,7 @@ class User(AbstractUser, PermissionsMixin):
                     result = response.json()
                     predicted_phase = result.get("predicted_phase", str())
                     if predicted_phase:
-                        self.cycle_record = predicted_phase
+                        self.menstrual_phase = predicted_phase
                     self.cycle_record_json = result
                     self.save(update_fields=["cycle_record_json"])
                     return result
