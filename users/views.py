@@ -33,73 +33,6 @@ def calculate_age(born):
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
 
-def calculate_bmi(weight_kg, height_m):
-    """
-    Calculate Body Mass Index (BMI).
-
-    Parameters:
-        weight_kg (float): Weight in kilograms
-        height_m (float): Height in meters
-
-    Returns:
-        float: BMI rounded to 2 decimal places
-    """
-    if height_m <= 0:
-        raise ValueError("Height must be greater than zero.")
-
-    bmi = weight_kg / (height_m**2)
-    return round(bmi, 2)
-
-
-def bfp_from_bmi_and_age(bmi, age, gender):
-    gender_factor = 1 if gender.lower() == "male" else 0
-    bfp = (1.51 * bmi) - (0.70 * age) + (3.6 * gender_factor) + 1.4
-    return round(bfp, 1)
-
-
-def calculate_body_fat_percentage(gender, neck_cm, waist_cm, hip_cm=None):
-    """
-    Estimate Body Fat Percentage (BFP) using U.S. Navy method.
-
-    Parameters:
-        gender (str): 'male' or 'female'
-        neck_cm (float): Neck circumference in cm
-        waist_cm (float): Waist circumference in cm
-        hip_cm (float): Hip circumference in cm (required only for females)
-
-    Returns:
-        float: Estimated BFP rounded to 1 decimal place, or None if data is insufficient
-    """
-    gender = gender.lower()
-
-    if gender == "male":
-        if neck_cm is None or waist_cm is None:
-            return None
-        log_waist_neck = math.log10(waist_cm - neck_cm)
-        bfp = (
-            495 / (1.0324 - 0.19077 * log_waist_neck + 0.00056 * (log_waist_neck**2))
-            - 450
-        )
-        return round(bfp, 1)
-
-    elif gender == "female":
-        if neck_cm is None or waist_cm is None or hip_cm is None:
-            return None
-        log_waist_hip_neck = math.log10(waist_cm + hip_cm - neck_cm)
-        bfp = (
-            495
-            / (
-                1.29579
-                - 0.35004 * log_waist_hip_neck
-                + 0.00056 * (log_waist_hip_neck**2)
-            )
-            - 450
-        )
-        return round(bfp, 1)
-
-    else:
-        raise ValueError("Gender must be 'male' or 'female'.")
-
 
 class CreateUpdateUserView(APIView):
     """Create user"""
@@ -246,7 +179,8 @@ class CreateUpdateUserView(APIView):
         user.height = height
         user.set_password(password)
         user.save()
-
+        user.predict_cycle_phase()
+        
         token = Token.objects.create(user=user)
         print(token.key)
 
@@ -353,7 +287,7 @@ class WeightHistoryView(APIView):
         print("data: ", data)
 
         email = data.get("email")
-        print("repr: ", repr(email))
+        # print("repr: ", repr(email))
 
         if email:
             print("iser odL ", email)

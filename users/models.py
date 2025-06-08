@@ -284,8 +284,9 @@ class User(AbstractUser, PermissionsMixin):
             }
 
             # Send POST request
-            url = "http://localhost:8000/phase-predict"
+            url = "http://host.docker.internal:8000/phase-predict"
             response = requests.post(url, json=payload)
+            print("НАЧИНАЕМ PAYLOAD: " + payload) 
 
             # Handle success
             if response.status_code == 200:
