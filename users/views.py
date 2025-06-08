@@ -248,6 +248,9 @@ class ProfileInfoView(APIView):
                 "age": user.age,
                 "bmi": user.bmi,
                 "bfp": user.bfp,
+                "allergens": [
+                    allergen.name for allergen in user.allergens.all()
+                ],
             },
         }
 
