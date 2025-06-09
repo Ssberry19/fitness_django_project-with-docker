@@ -169,7 +169,7 @@ class User(AbstractUser, PermissionsMixin):
     )
 
     # Cycles
-    menstrual_phase = models.CharField(max_length=255, null=True, unique=True)
+    menstrual_phase = models.CharField(max_length=255, null=True, blank=True)
     cycle_record_json = models.JSONField(default=dict, blank=True, null=True)
     cycle_length = models.IntegerField(
         null=True, blank=True, verbose_name="Cycle length in days"
