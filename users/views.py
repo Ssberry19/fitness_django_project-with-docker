@@ -324,7 +324,7 @@ class UpdateUserView(APIView):
         if goal:
             user.goal = goal
 
-        activity_level = activity_levels_2(data.get("activityLevel", ""), 1)
+        activity_level = activity_levels_2.get(data.get("activityLevel", ""), 1)
         if activity_level:
             user.activity_level = activity_level
 
