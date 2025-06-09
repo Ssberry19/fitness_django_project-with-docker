@@ -346,6 +346,7 @@ class UpdateUserView(APIView):
 
         last_period_date = data.get("lastPeriodDate")
         if last_period_date:
+            last_period_date = last_period_date.replace("Z", "+00:00")
             last_period_date_dt = datetime.fromisoformat(last_period_date)
         else:
             last_period_date_dt = None
